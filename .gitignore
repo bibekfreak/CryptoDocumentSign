@@ -1,0 +1,7 @@
+signed_docs
+uploads
+modules/__pycache__
+encrypted_docs
+static/temp
+pki_users.db
+__pycache__

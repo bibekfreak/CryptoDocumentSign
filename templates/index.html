@@ -1,0 +1,41 @@
+{% extends 'base.html' %} {% block content %}
+<h2 class="mb-4 text-center">Login</h2>
+
+<form method="POST" action="/login" enctype="multipart/form-data" class="mt-3">
+  <div class="mb-3">
+    <label class="form-label">Email</label>
+    <input type="email" name="email" class="form-control" required />
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Private Key (.pem)</label>
+    <input
+      type="file"
+      name="private_key"
+      class="form-control"
+      accept=".pem"
+      required
+    />
+  </div>
+  <button type="submit" class="btn btn-primary w-100">Login</button>
+</form>
+
+{% if auto_download and session.download_key %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const b64 = "{{ session.download_key }}";
+    const filename = "{{ session.download_filename }}";
+    const blob = new Blob([atob(b64)], { type: "application/x-pem-file" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    fetch("/clear-download-flag", { method: "POST" });
+  });
+</script>
+
+{% endif %} {% endblock %}

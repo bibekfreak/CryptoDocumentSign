@@ -1,0 +1,148 @@
+{% extends 'base.html' %} {% block content %}
+<meta name="user-email" content="{{ user.email }}" />
+<h2 class="mb-4 text-center">Welcome, {{ user.username }}</h2>
+
+<!-- Nav Tabs -->
+<ul class="nav nav-tabs" id="actionTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button
+      class="nav-link active"
+      id="sign-tab"
+      data-bs-toggle="tab"
+      data-bs-target="#sign"
+      type="button"
+      role="tab"
+    >
+      Sign & Encrypt
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button
+      class="nav-link"
+      id="decrypt-tab"
+      data-bs-toggle="tab"
+      data-bs-target="#decrypt"
+      type="button"
+      role="tab"
+    >
+      Verify, Decrypt & Co-Sign
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content mt-3" id="actionTabsContent">
+  <!-- Sign & Encrypt Tab -->
+  <div class="tab-pane fade show active" id="sign" role="tabpanel">
+    <section class="card mt-3 mb-5 p-3">
+      <h3>Sign & Encrypt Document</h3>
+      <form action="/sign-encrypt" method="POST" enctype="multipart/form-data">
+        <div class="mb-3">
+          <label class="form-label">Upload Your Private Key (.pem):</label>
+          <input type="file" name="user_key" class="form-control" required />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Upload Document to Sign:</label>
+          <input
+            type="file"
+            name="document"
+            class="form-control"
+            accept=".pdf"
+            required
+          />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Select Recipients:</label>
+          <div class="custom-multiselect" id="userDropdown">
+            <button
+              type="button"
+              class="dropdown-btn btn btn-outline-secondary w-100"
+            >
+              Choose Recipients ⬇
+            </button>
+            <div
+              class="dropdown-list border p-2"
+              id="userList"
+              style="max-height: 200px; overflow-y: auto"
+            ></div>
+          </div>
+          <div id="recipientsInput"></div>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="tab-pane fade" id="decrypt" role="tabpanel">
+    <section class="card mt-3 mb-5 p-3">
+      <h3>Verify, Decrypt & Co-Sign Document</h3>
+      <form
+        action="/decrypt-preview"
+        method="POST"
+        enctype="multipart/form-data"
+      >
+        <div class="mb-3">
+          <label class="form-label">Encrypted File (.enc):</label>
+          <input
+            type="file"
+            name="encrypted_file"
+            class="form-control"
+            required
+          />
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Your Private Key (.pem):</label>
+          <input type="file" name="user_key" class="form-control" required />
+        </div>
+        <button type="submit" class="btn btn-primary">Decrypt</button>
+      </form>
+
+      {% if session.decrypted_file %}
+      <hr />
+      <h5>Decrypted PDF Preview</h5>
+      <iframe
+        src="{{ url_for('static', filename='temp/' + session.decrypted_file) }}"
+        width="100%"
+        height="500px"
+      ></iframe>
+      <form action="/co-sign" method="POST">
+        <input
+          type="hidden"
+          name="decrypted_file"
+          value="{{ session.decrypted_file }}"
+        />
+        <button type="submit" class="btn btn-success mt-3">
+          Co-Sign Document
+        </button>
+      </form>
+      {% endif %}
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  {% if session.download_filename %}
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const link = document.createElement("a");
+      link.href =
+        "/download-key?file={{ session.download_filename | urlencode }}";
+      link.download = "{{ session.download_filename }}";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      fetch("/clear-download-flag", { method: "POST" });
+    });
+  </script>
+  {% endif %}
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const activeTab = "{{ request.args.get('tab', '') }}";
+      if (activeTab) {
+        const triggerEl = document.querySelector(`#${activeTab}-tab`);
+        if (triggerEl) new bootstrap.Tab(triggerEl).show();
+      }
+    });
+  </script>
+
+  {% endblock %}
+</div>
